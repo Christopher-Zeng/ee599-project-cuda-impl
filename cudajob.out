@@ -1,8 +1,8 @@
 ==========================================
-SLURM_JOB_ID = 6773650
+SLURM_JOB_ID = 6774216
 SLURM_JOB_NODELIST = e07-05
-TMPDIR = /tmp/SLURM_6773650
+TMPDIR = /tmp/SLURM_6774216
 ==========================================
 Matrix Multiplication
-time is 30874336.000000 ns
-the value of c[451][451] is 2048.
+time is 136954877.000000 ns
+the value of c[451][451] is 3.000000.
