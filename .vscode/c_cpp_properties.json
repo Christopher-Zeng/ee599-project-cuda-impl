@@ -1,0 +1,15 @@
+{
+    "configurations": [
+        {
+            "name": "Linux",
+            "includePath": [
+                "${workspaceFolder}/**",
+                "/spack/apps2/linux-centos7-x86_64/gcc-11.2.0/cuda-11.4.0-nlsvtd4ecspuvty23x7zkinufsmrj5vw/include"
+            ],
+            "defines": [],
+            "compilerPath": "/spack/apps2/linux-centos7-x86_64/gcc-11.2.0/cuda-11.4.0-nlsvtd4ecspuvty23x7zkinufsmrj5vw/bin/nvcc",
+            "intelliSenseMode": "linux-gcc-x64"
+        }
+    ],
+    "version": 4
+}
