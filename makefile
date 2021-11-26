@@ -23,7 +23,7 @@ SRC := $(foreach x, $(SRC_PATH), $(wildcard $(addprefix $(x)/*,.c*)))
 OBJ := $(addprefix $(OBJ_PATH)/, $(addsuffix .o, $(notdir $(basename $(SRC)))))
 
 # clean files list
-DISTCLEAN_LIST := $(OBJ)
+DISTCLEAN_LIST := $(OBJ_PATH)/* $(BIN_PATH)/*
 CLEAN_LIST := $(TARGET) \
 			  $(DISTCLEAN_LIST)
 
@@ -51,7 +51,7 @@ makedir:
 all: $(OBJ) matmul
 
 .PHONY: matmul
-matmul: $(BIN_PATH)/matmul-naive.app $(BIN_PATH)/matmul-cublas.app
+matmul: $(BIN_PATH)/matmul-naive.app
 
 .PHONY: clean
 clean:
