@@ -2,6 +2,8 @@
 #include <stdio.h>
 #include <cublas.h>
 #include <time.h>
+#include <cstdio>
+#include <cstdlib>
 
 #define size 1024
 #define grid_size 64
@@ -18,6 +20,18 @@ __global__ void matrix_multiply(int *a, int *b, int *c)
         c[my_x + my_y * size] += a[pos + my_y * size] * b[my_x + pos * size];
     }
 }
+
+__global__ void gpuCublasMmul(cublasHandle_t &handle, int *a, int *b, int *c, int m, int k, int n) 
+{
+    int lda=m,ldb=k,ldc=m;
+    const float alf = 1;
+    const float bet = 0;
+    const float *alpha = &alf;
+    const float *beta = &bet;
+    // do the actual multiplication
+    cublasSgemm(handle, CUBLAS_OP_N, CUBLAS_OP_N, m, n, k, alpha, A, lda, B, ldb, beta, C, ldc);
+}
+
 
 int main()
 {
@@ -54,7 +68,13 @@ int main()
     {
         perror("clock gettime");
     }
-    matrix_multiply<<<dimGrid, dimBlock>>>(vram_a, vram_b, vram_c);
+    // matrix_multiply<<<dimGrid, dimBlock>>>(vram_a, vram_b, vram_c);
+
+    // cublas gemm
+    cublasHandle_t handle;
+    cublasCreate(&handle);
+    gpuCublasMmul(handle, vram_a, vram_b, vram_c, size, size, size);
+
     cudaMemcpy(c, vram_c, sizeof(int) * size * size, cudaMemcpyDeviceToHost);
 
     if (clock_gettime(CLOCK_REALTIME, &stop) == -1)
