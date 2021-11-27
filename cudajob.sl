@@ -12,6 +12,6 @@ module load cuda/10.1.243
 # ./bin/matmul-naive.app
 
 echo "Test"
-./obj/test.o
+./test
 
 

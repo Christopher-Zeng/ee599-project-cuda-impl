@@ -1,8 +1,6 @@
 #include <stdlib.h>
 #include "trans-conv.h"
 
-void gemm(float *opera, float *operb, float *res, int H, int W, int K);
-
 __global__ void gema_kernel(float *opera, float *operb)
 {
     opera[threadIdx.x * blockDim.y + threadIdx.y] += operb[threadIdx.x * blockDim.y + threadIdx.y];
