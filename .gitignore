@@ -4,5 +4,3 @@ obj/
 bin/
 # Ignore execution output files
 out/
-out/cudajob.err
-out/cudajob.out
