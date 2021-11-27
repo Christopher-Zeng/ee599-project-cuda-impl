@@ -1,25 +1,27 @@
 #include <stdlib.h>
 
-/*
-    Perform general matrix multiplication as operc = opera @ operb.
-    opera: the operand A. Should be opera[H][K] serialized array.
-    opera: the operand B. Should be operb[K][W] serialized array.
-    res: the result C. Should be operc[H][W] serialized array.
-*/
 bool gemm(float *opera, float *operb, float *res, int H, int W, int K);
 
-/*
-    Perform general matrix addition as opera += operb.
-    opera: the operand A. Should be opera[H][W] serialized array.
-    opera: the operand B. Should be operb[H][W] serialized array.
-*/
-bool gema(float *opera, float *operb, int H, int W);
+__global__ void gema_kernel(float *opera, float *operb)
+{
+    opera[threadIdx.x * blockDim.y + threadIdx.y] += operb[threadIdx.x * blockDim.y + threadIdx.y];
+}
 
-/*
-    input: the input tensor to be convolved. Should be input[H][W][C] serialized array.
-    kernel: the kernel tensor. Should be kernel[C][M][K][K] serialized array. 
-    output: the result output tensor. Should be result[M][H][W] serialized array. 
-*/
+bool gema(float *opera, float *operb, int H, int W)
+{
+    float *vramOpera, *vramOperb;
+    cudaMalloc((void **)&vramOpera, H * W * sizeof(float));
+    cudaMalloc((void **)&vramOperb, H * W * sizeof(float));
+    cudaMemcpy(vramOpera, opera, H * W * sizeof(float), cudaMemcpyHostToDevice);
+    cudaMemcpy(vramOperb, operb, H * W * sizeof(float), cudaMemcpyHostToDevice);
+    dim3 dimGrid(1);
+    dim3 dimBlock(H, W);
+    gema_kernel<<<dimGrid, dimBlock>>>(vramOpera, vramOperb);
+    cudaMemcpy(opera, vramOpera, H * W * sizeof(float), cudaMemcpyDeviceToHost);
+    cudaFree(vramOpera);
+    cudaFree(vramOperb);
+}
+
 bool trans_conv(float *input, float *kernel, float *output, int H, int W, int C, int M, int K)
 {
     // patch: the patch tensor to be merged back together. Should be patch [H][W][M][K][K] serialized array.
@@ -33,23 +35,17 @@ bool trans_conv(float *input, float *kernel, float *output, int H, int W, int C,
     // Perform shift-add to convert the patch matrix to result matrix.
     shift_add(patch, output, H, W, M, K);
 
+    free(patch);
+
     return output;
 }
 
-/*
-    patch: the patch tensor to be merged back together. Should be patch [H][W][M][K][K] serialized array.
-    output: the result output tensor. Should be result[M][H][W] serialized array. 
-*/
 bool shift_add(float *patch, float *output, int H, int W, int M, int K)
 {
 
     // Local variables
-    // the starting y of the current patch
-    int h;
-    // the starting x of the current patch
-    int w;
-    // the starting z of the current patch
-    int m;
+    // the starting y, x, z of the current patch
+    int h, w, m;
 
     for (h = 0; h < H; ++h)
     {
@@ -60,8 +56,7 @@ bool shift_add(float *patch, float *output, int H, int W, int M, int K)
                 gema(
                     output + m * H * W + h * W + w,
                     patch + h * W * M * K * K + w * M * K * K + m * K * K,
-                    K, K
-                    );
+                    K, K);
             }
         }
     }
