@@ -6,9 +6,10 @@
 #include <cstdlib>
 #include "trans-conv.h"
 
-void blas_gemm(const float *A, const float *B, float *C, const int m, const int k, const int n) {
+void blas_gemm(const float *A, const float *B, float *C, const int m, const int k, const int n)
+{
     // define cublasSgemm parameters
-    int lda=m,ldb=k,ldc=m;
+    int lda = m, ldb = k, ldc = m;
     const float alf = 1;
     const float bet = 0;
     const float *alpha = &alf;
@@ -16,7 +17,7 @@ void blas_gemm(const float *A, const float *B, float *C, const int m, const int 
 
     // create handle
     cublasHandle_t handle;
-    cublasCreate(&handle); 
+    cublasCreate(&handle);
 
     // call gemm
     cublasSgemm(handle, CUBLAS_OP_N, CUBLAS_OP_N, m, n, k, alpha, A, lda, B, ldb, beta, C, ldc);
@@ -41,13 +42,13 @@ void gemm(float *opera, float *operb, float *res, int H, int W, int K){
     // set the values of device matrices
     cublasStatus_t status;
     status = cublasSetMatrix(rows_A, cols_A, sizeof(float), opera, rows_A, device_A, rows_A);
-    if (status != CUBLAS_STATUS_SUCCESS) 
+    if (status != CUBLAS_STATUS_SUCCESS)
     {
         throw EXIT_FAILURE;
     }
 
     status = cublasSetMatrix(rows_B, cols_B, sizeof(float), operb, rows_B, device_B, rows_B);
-    if (status != CUBLAS_STATUS_SUCCESS) 
+    if (status != CUBLAS_STATUS_SUCCESS)
     {
         throw EXIT_FAILURE;
     }

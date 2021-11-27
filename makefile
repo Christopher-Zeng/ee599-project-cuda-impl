@@ -17,38 +17,54 @@ LDFLAGS+= $(foreach D,$(LIB_DIRS),-L$D) $(foreach L,$(LIBS), -l$(L))
 BIN_PATH := bin
 OBJ_PATH := obj
 SRC_PATH := src
+DBG_PATH := debug
+
+# compile macros
+TARGET_NAME := cpu-impl
+ifeq ($(OS),Windows_NT)
+	TARGET_NAME := $(addsuffix .exe,$(TARGET_NAME))
+endif
+TARGET := $(BIN_PATH)/$(TARGET_NAME)
+TARGET_DEBUG := $(DBG_PATH)/$(TARGET_NAME)
 
 # src files & obj files
 SRC := $(foreach x, $(SRC_PATH), $(wildcard $(addprefix $(x)/*,.c*)))
 OBJ := $(addprefix $(OBJ_PATH)/, $(addsuffix .o, $(notdir $(basename $(SRC)))))
+OBJ_DEBUG := $(addprefix $(DBG_PATH)/, $(addsuffix .o, $(notdir $(basename $(SRC)))))
 
 # clean files list
-DISTCLEAN_LIST := $(OBJ_PATH)/* $(BIN_PATH)/*
+DISTCLEAN_LIST := $(OBJ) \
+                  $(OBJ_DEBUG)
 CLEAN_LIST := $(TARGET) \
+			  $(TARGET_DEBUG) \
 			  $(DISTCLEAN_LIST)
 
 # default rule
 default: makedir all
 
 # non-phony targets
+$(TARGET): $(OBJ)
+	$(CC) $(CCFLAGS) $(LDFLAGS) -o $@ $(OBJ)
 
-$(BIN_PATH)/test.app: $(OBJ)
-	$(CC) $< $(CCFLAGS) $(LDFLAGS) -o $@
-
-$(OBJ_PATH)/%.o: $(SRC_PATH)/%.cu
+$(OBJ_PATH)/%.o: $(SRC_PATH)/%.c*
 	$(CC) $< $(CCFLAGS) $(OBJFLAGS) -o $@
 
-# phony rules
+$(TARGET_DEBUG): $(OBJ_DEBUG)
+	$(CC) $(CCDBGFLAGS) $(LDFLAGS) -o $@
 
+$(DBG_PATH)/%.o: $(SRC_PATH)/%.c*
+	$(CC) $< $(CCDBGFLAGS) $(OBJFLAGS) -o $@
+
+# phony rules
 .PHONY: makedir
 makedir:
 	@mkdir -p $(BIN_PATH) $(OBJ_PATH) $(DBG_PATH)
 
 .PHONY: all
-all: $(OBJ) test
+all: $(TARGET)
 
-.PHONY: test
-test: $(BIN_PATH)/test.app
+.PHONY: debug
+debug: $(TARGET_DEBUG)
 
 .PHONY: clean
 clean:
