@@ -37,24 +37,84 @@ void trans_conv(float *input, float *kernel, float *output, int H, int W, int C,
     free(patch);
 }
 
-void shift_add(float *patch, float *output, int H, int W, int M, int K)
+/*
+    For H * W patches, each of M * K * K size, 
+    this function perform shift_add over the rows of the patches.
+    The result should be M * H patch rows, each of K * (W+K-1) size. 
+*/
+__global__ void shift_add_rows(float *patch, float *patchRows, int W)
 {
+    // Regain tensor indexes;
+    int h = blockIdx.x;
+    int m = threadIdx.x;
+    int x = threadIdx.y;
+    int y = threadIdx.z;
+    int w = 0;
 
-    // Local variables
-    // the starting y, x, z of the current patch
-    int h, w, m;
+    int H = gridDim.x;
+    int M = blockDim.x;
+    int K = blockDim.y;
+
+    // Utilized on-chip cache to speed up.
+    for (w = 0; w < W; ++w)
+    {
+        patchRows[m * H * K * (W + K - 1) +
+                  h * K * (W + K - 1) +
+                  x * (W + K - 1) +
+                  y + w] +=
+            patch[h * W * M * K * K +
+                  w * M * K * K +
+                  m * K * K +
+                  x * K +
+                  y];
+    }
+}
+
+/*
+    For M * H patch rows, each of K * (W+K-1) size, 
+    this function perform shift_add over the columns of the patch rows.
+    The result should be M * (H+K-1) * (W+K-1) size.
+*/
+__global__ void shift_add_cols(float *patchRows, float *output, int H)
+{
+    // Regain tensor indexes.
+    int m = blockIdx.x;
+    int w = threadIdx.x;
+    int x = threadIdx.y;
+    int h = 0;
+
+    int W = blockDim.x;
+    int K = blockDim.y;
 
     for (h = 0; h < H; ++h)
     {
-        for (w = 0; w < W; ++w)
-        {
-            for (m = 0; m < M; ++m)
-            {
-                gema(
-                    output + m * H * W + h * W + w,
-                    patch + h * W * M * K * K + w * M * K * K + m * K * K,
-                    K, K);
-            }
-        }
+        output[m * (H + K - 1) * W +
+               (h + x) * W +
+               w] +=
+            patchRows[m * H * K * W +
+                      h * K * W +
+                      x * W +
+                      w];
     }
+}
+
+void shift_add(float *patch, float *output, int H, int W, int M, int K)
+{
+    // Device Memory
+    float *vramPatch, *vramPatchRows, *vramOutput;
+
+    cudaMalloc((void **)&vramPatch, H * W * M * K * K * sizeof(float));
+    cudaMalloc((void **)&vramPatchRows, M * H * K * (W + K - 1) * sizeof(float));
+    cudaMemcpy(vramPatch, patch, H * W * M * K * K * sizeof(float), cudaMemcpyHostToDevice);
+    dim3 dimGridShiftAddRows(H);
+    dim3 dimBlockShiftAddRows(M, K, K);
+    shift_add_rows<<<dimGridShiftAddRows, dimBlockShiftAddRows>>>(vramPatch, vramPatchRows, W);
+    cudaFree(vramPatch);
+
+    cudaMalloc((void **)&vramOutput, M * (H + K - 1) * (W + K - 1) * sizeof(float));
+    dim3 dimGridShiftAddCol(M);
+    dim3 dimBlockShiftAddCol((W + K - 1), K);
+    shift_add_cols<<<dimGridShiftAddCol, dimBlockShiftAddCol>>>(vramPatchRows, vramOutput, H);
+    cudaFree(vramPatchRows);
+    cudaMemcpy(output, vramOutput, M * (H + K - 1) * (W + K - 1) * sizeof(float), cudaMemcpyDeviceToHost);
 }
