@@ -21,4 +21,4 @@ bool trans_conv(float *input, float *kernel, float *output, int H, int W, int C,
     patch: the patch tensor to be merged back together. Should be patch [H][W][M][K][K] serialized array.
     output: the result output tensor. Should be result[M][H+K-1][W+K-1] serialized array. 
 */
-bool shift_add(float *patch, float *output, int H, int W, int M, int K)
+bool shift_add(float *patch, float *output, int H, int W, int M, int K);

@@ -1,4 +1,5 @@
 #include <stdlib.h>
+#include "trans-conv.h"
 
 /*
     Perform general matrix multiplication as operc = opera @ operb.
@@ -33,7 +34,7 @@ bool trans_conv(float *input, float *kernel, float *output, int H, int W, int C,
     // Perform shift-add to convert the patch matrix to result matrix.
     shift_add(patch, output, H, W, M, K);
 
-    return output;
+    return true;
 }
 
 /*
@@ -65,4 +66,6 @@ bool shift_add(float *patch, float *output, int H, int W, int M, int K)
             }
         }
     }
+
+    return true;
 }

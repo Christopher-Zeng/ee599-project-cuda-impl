@@ -27,7 +27,7 @@ void blas_gemm(const float *A, const float *B, float *C, const int m, const int 
 
 bool gemm(float *opera, float *operb, float *res, int H, int W, int K){
     // define input and output dimensions
-    int i, rows_A, cols_A, rows_B, cols_B, rows_C, cols_C;
+    int rows_A, cols_A, rows_B, cols_B, rows_C, cols_C;
     rows_A = rows_C = H;
     cols_A = rows_B = K;
     cols_B = cols_C = W;

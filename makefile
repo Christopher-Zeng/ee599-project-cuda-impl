@@ -2,7 +2,7 @@
 CC := nvcc
 
 CCFLAGS :=
-LDFLAGS := 
+LDFLAGS := -lcublas
 OBJFLAGS := -c
 
 INC_DIRS=./inc 
@@ -38,6 +38,9 @@ $(BIN_PATH)/matmul-naive.app: $(OBJ_PATH)/matmul-naive.o
 $(BIN_PATH)/matmul-cublas.app: $(OBJ_PATH)/matmul-cublas.o
 	$(CC) $< $(CCFLAGS) $(LDFLAGS) -o $@
 
+$(BIN_PATH)/test.app: $(OBJ_PATH)/test.o
+	$(CC) $< $(CCFLAGS) $(LDFLAGS) -o $@
+
 $(OBJ_PATH)/%.o: $(SRC_PATH)/%.cu
 	$(CC) $< $(CCFLAGS) $(OBJFLAGS) -o $@
 
@@ -48,10 +51,13 @@ makedir:
 	@mkdir -p $(BIN_PATH) $(OBJ_PATH) $(DBG_PATH)
 
 .PHONY: all
-all: $(OBJ) matmul
+all: $(OBJ) matmul test
 
 .PHONY: matmul
 matmul: $(BIN_PATH)/matmul-naive.app
+
+.PHONY: test
+test: $(BIN_PATH)/test.app
 
 .PHONY: clean
 clean:
