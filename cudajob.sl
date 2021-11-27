@@ -10,5 +10,3 @@ module load cuda/10.1.243
 
 echo "GPU Implementation"
 ./bin/gpu-impl
-
-

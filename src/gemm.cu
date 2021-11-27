@@ -26,8 +26,7 @@ void blas_gemm(const float *A, const float *B, float *C, const int m, const int 
     cublasDestroy(handle);
 }
 
-void gemm(float *opera, float *operb, float *res, int H, int W, int K)
-{
+void gemm(float *opera, float *operb, float *res, int H, int W, int K){
     // define input and output dimensions
     int rows_A, cols_A, rows_B, cols_B, rows_C, cols_C;
     rows_A = rows_C = H;
@@ -57,7 +56,7 @@ void gemm(float *opera, float *operb, float *res, int H, int W, int K)
     // Multiply A and B on GPU
     blas_gemm(device_A, device_B, device_C, rows_A, cols_A, cols_B);
 
-    // Copy (and print) the result on host memory
+    // Copy the result on host memory
     cudaMemcpy(res, device_C, rows_C * cols_C * sizeof(float), cudaMemcpyDeviceToHost);
 
     //Free GPU memory
