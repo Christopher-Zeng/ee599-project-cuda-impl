@@ -32,13 +32,7 @@ default: makedir all
 
 # non-phony targets
 
-$(BIN_PATH)/matmul-naive.app: $(OBJ_PATH)/matmul-naive.o
-	$(CC) $< $(CCFLAGS) $(LDFLAGS) -o $@
-
-$(BIN_PATH)/matmul-cublas.app: $(OBJ_PATH)/matmul-cublas.o
-	$(CC) $< $(CCFLAGS) $(LDFLAGS) -o $@
-
-$(BIN_PATH)/test.app: $(OBJ_PATH)/test.o
+$(BIN_PATH)/test.app: $(OBJ)
 	$(CC) $< $(CCFLAGS) $(LDFLAGS) -o $@
 
 $(OBJ_PATH)/%.o: $(SRC_PATH)/%.cu
@@ -51,10 +45,7 @@ makedir:
 	@mkdir -p $(BIN_PATH) $(OBJ_PATH) $(DBG_PATH)
 
 .PHONY: all
-all: $(OBJ) matmul test
-
-.PHONY: matmul
-matmul: $(BIN_PATH)/matmul-naive.app
+all: $(OBJ) test
 
 .PHONY: test
 test: $(BIN_PATH)/test.app
