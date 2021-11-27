@@ -1,5 +1,6 @@
 # Ignore object files
-obj/*
-
+obj/
 # Ignore binary files
-bin/*
+bin/
+# Ignore execution output files
+out/
