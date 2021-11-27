@@ -8,10 +8,7 @@
 
 module load cuda/10.1.243
 
-# echo "Matrix Multiplication"
-# ./bin/matmul-naive.app
-
-echo "Test"
-./obj/test.o
+echo "GPU Implementation"
+./bin/gpu-impl
 
 
