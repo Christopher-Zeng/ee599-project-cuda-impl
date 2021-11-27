@@ -30,8 +30,8 @@ int main(void) {
     int rows_input, cols_input, rows_kernel, cols_kernel, rows_output, cols_output;
 
     //for simplicity we define input and kernel both to be 2*2 matrices
-    rows_input = cols_input = 2;
-    rows_kernel = cols_kernel = 2;
+    rows_input = cols_input = 3;
+    rows_kernel = cols_kernel = 3;
     rows_output = rows_input + rows_kernel - 1;
     cols_output = cols_input + cols_kernel - 1;
  
@@ -41,18 +41,18 @@ int main(void) {
     float *host_output = (float *)malloc(rows_output * cols_output * sizeof(float));
 
     // initialize host matrices (do we need to initialize output?)
-    int counter = 1;
+    int counter = 1.0;
     for(i=0; i<rows_input; i++){
         for(j=0; j<cols_input; j++){
             host_input[j * rows_input + i] = counter;
-            counter += 1;
+            counter += 1.0;
         }
     }
 
     for(i=0; i<rows_kernel; i++){
         for(j=0; j<cols_kernel; j++){
             host_kernel[j * rows_kernel + i] = counter;
-            counter += 1;
+            counter += 1.0;
         }
     }
     std::cout << "input =" << std::endl;
@@ -63,6 +63,9 @@ int main(void) {
 
     // try to test to trans_conv
     trans_conv(host_input, host_kernel, host_output, rows_input, cols_input, 1, 1, rows_kernel);
+
+    // try gemm
+    // gemm(host_input, host_kernel, host_output, 3, 3, 3);
 
     std::cout << "output =" << std::endl;
     print_matrix(host_output, rows_output, cols_output);
