@@ -27,7 +27,7 @@ __global__ void shift_add_rows(
     For M * H patch rows, each of K * (W+K-1) size, 
     this function perform shift_add over the columns of the patch rows.
     The result should be M * (H+K-1) * (W+K-1) size.
-    Alway called with (M) grid, (W + K - 1) block.
+    Alway called with (M) grid, (W+K-1) block.
 */
 __global__ void shift_add_cols(
     const float *rowPatch, float *vramOutput,
