@@ -5,12 +5,24 @@
 
 void trans_conv(float *input, float *kernel, float *output, int H, int W, int C, int M, int K)
 {
+
+    // Memory transfer
+    float *vramInput, *vramKernel;
+    cudaMalloc(&vramInput, H * W * C * sizeof(float));
+    cudaMalloc(&vramKernel, C * M * K * K * sizeof(float));
+    cudaMemcpy(vramInput, input, H * W * C * sizeof(float), cudaMemcpyHostToDevice);
+    cudaMemcpy(vramKernel, kernel, C * M * K * K * sizeof(float), cudaMemcpyHostToDevice);
+
     // vramPatch: the patch tensor to be merged back together. Should be patch [H][W][M][K][K] serialized array.
     float *vramPatch;
     cudaMalloc(&vramPatch, H * W * M * K * K * sizeof(float));
 
     // Perform GEMM to get the patch matrix.
     gemm(input, kernel, vramPatch, H * W, M * K * K, C);
+
+    // Memory management
+    cudaFree(vramInput);
+    cudaFree(vramKernel);
 
     // DEBUG CODE
     float *patch = (float *)malloc(H * W * M * K * K * sizeof(float));
@@ -25,8 +37,11 @@ void trans_conv(float *input, float *kernel, float *output, int H, int W, int C,
     // Perform shift-add to convert the patch matrix to result matrix.
     shift_add(vramPatch, vramOutput, H, W, M, K);
 
-    cudaMemcpy(output, vramOutput, M * H * W * sizeof(float), cudaMemcpyDeviceToHost);
+    // Memory management
     cudaFree(vramPatch);
+
+    // Memory transfer
+    cudaMemcpy(output, vramOutput, M * H * W * sizeof(float), cudaMemcpyDeviceToHost);
     cudaFree(vramOutput);
 }
 

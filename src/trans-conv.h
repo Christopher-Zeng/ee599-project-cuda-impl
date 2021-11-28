@@ -1,10 +1,10 @@
 /*
     Perform general matrix multiplication as operc = opera @ operb.
-    opera: the operand A. Should be opera[H][K] serialized array on host.
-    opera: the operand B. Should be operb[K][W] serialized array on host.
+    vramOpera: the operand A. Should be opera[H][K] serialized array on device.
+    vramOperb: the operand B. Should be operb[K][W] serialized array on device.
     vramRes: the result C. Should be operc[H][W] serialized array on device.
 */
-void gemm(float *opera, float *operb, float *vramRes, int H, int W, int K);
+void gemm(float *vramOpera, float *vramOperb, float *vramRes, int H, int W, int K);
 /*
     input: the input tensor to be convolved. Should be input[H][W][C] serialized array.
     kernel: the kernel tensor. Should be kernel[C][M][K][K] serialized array. 
