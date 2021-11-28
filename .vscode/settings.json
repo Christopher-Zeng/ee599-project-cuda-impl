@@ -1,5 +1,6 @@
 {
     "files.associations": {
+        "*.ps1": "powershell",
         "array": "cpp",
         "atomic": "cpp",
         "*.tcc": "cpp",
@@ -58,6 +59,7 @@
         "__hash_table": "cpp",
         "__split_buffer": "cpp",
         "queue": "cpp",
-        "stack": "cpp"
+        "stack": "cpp",
+        "__tuple": "cpp"
     }
 }
