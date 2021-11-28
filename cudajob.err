@@ -1,0 +1,1 @@
+/var/spool/slurm/d/job6779716/slurm_script: line 12: 24250 Segmentation fault      ./bin/gpu-impl

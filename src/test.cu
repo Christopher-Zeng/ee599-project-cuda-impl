@@ -42,10 +42,6 @@ int main(void)
     float *host_input = (float *)malloc(rows_input * cols_input * sizeof(float));
     float *host_kernel = (float *)malloc(rows_kernel * cols_kernel * sizeof(float));
     float *host_conv_output = (float *)malloc(rows_output * cols_output * sizeof(float));
-    float *host_gemm_output = (float *)malloc(rows_kernel * cols_input * sizeof(float));
-
-    // initialize host matrices in column major
-    // init_col_major
 
     // initialize host matrices in row major
     init_matrix(host_input, rows_input, cols_input, 1.0);
@@ -60,19 +56,13 @@ int main(void)
     // try to test to trans_conv
     trans_conv(host_input, host_kernel, host_conv_output, rows_input, cols_input, 1, 1, rows_kernel);
 
-    // try gemm
-    gemm(host_input, host_kernel, host_gemm_output, 2, 2, 2);
-
     std::cout << "conv output =" << std::endl;
     print_matrix(host_conv_output, rows_output, cols_output);
-    std::cout << "output =" << std::endl;
-    print_matrix(host_gemm_output, rows_kernel, cols_input);
 
     // Free CPU memory
     free(host_input);
     free(host_kernel);
     free(host_conv_output);
-    free(host_gemm_output);
 
     return 0;
 }

@@ -1,4 +1,5 @@
 #include <stdlib.h>
+#include <iostream>
 #include "trans-conv.h"
 
 __global__ void gema_kernel(float *opera, float *operb)
@@ -25,8 +26,7 @@ void trans_conv(float *input, float *kernel, float *output, int H, int W, int C,
 {
     // patch: the patch tensor to be merged back together. Should be patch [H][W][M][K][K] serialized array.
     float *patch;
-
-    patch = (float *)malloc(H * W * M * K * K * sizeof(float));
+    cudaMalloc(&patch, H * W * M * K * K * sizeof(float));
 
     // Perform GEMM to get the patch matrix.
     gemm(input, kernel, patch, H * W, M * K * K, C);
