@@ -65,12 +65,6 @@ void trans_conv(
     // Memory recycle
     cudaFree(vramRowPatch);
 
-    // DEBUG CODE
-    float *hostOutput = (float *)malloc(M * (H + K - 1) * (W + K - 1) * sizeof(float));
-    cudaMemcpy(hostOutput, vramOutput, M * (H + K - 1) * (W + K - 1) * sizeof(float), cudaMemcpyDeviceToHost);
-    print_matrix(hostOutput, M * (H + K - 1), (W + K - 1));
-    free(hostOutput);
-
     // Memory transfer
     cudaMemcpy(output, vramOutput, M * (H + K - 1) * (W + K - 1) * sizeof(float), cudaMemcpyDeviceToHost);
     cudaFree(vramOutput);
