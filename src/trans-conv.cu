@@ -5,20 +5,29 @@
 
 void trans_conv(float *input, float *kernel, float *output, int H, int W, int C, int M, int K)
 {
-    // patch: the patch tensor to be merged back together. Should be patch [H][W][M][K][K] serialized array.
-    float *patch;
-    cudaMalloc(&patch, H * W * M * K * K * sizeof(float));
+    // vramPatch: the patch tensor to be merged back together. Should be patch [H][W][M][K][K] serialized array.
+    float *vramPatch;
+    cudaMalloc(&vramPatch, H * W * M * K * K * sizeof(float));
 
     // Perform GEMM to get the patch matrix.
-    gemm(input, kernel, patch, H * W, M * K * K, C);
+    gemm(input, kernel, vramPatch, H * W, M * K * K, C);
 
     // DEBUG CODE
+    float *patch = (float *)malloc(H * W * M * K * K * sizeof(float));
+    cudaMemcpy(patch, vramPatch, H * W * M * K * K * sizeof(float), cudaMemcpyDeviceToHost);
     print_matrix(patch, H * W, M * K * K);
+    free(patch);
+
+    // vramOutput: the output tensor. Should be output[M][H+K-1][W+K-1] serialized array.
+    float *vramOutput;
+    cudaMalloc(&vramOutput, M * H * W * sizeof(float));
 
     // Perform shift-add to convert the patch matrix to result matrix.
-    shift_add(patch, output, H, W, M, K);
+    shift_add(vramPatch, vramOutput, H, W, M, K);
 
-    free(patch);
+    cudaMemcpy(output, vramOutput, M * H * W * sizeof(float), cudaMemcpyDeviceToHost);
+    cudaFree(vramPatch);
+    cudaFree(vramOutput);
 }
 
 /*
@@ -109,14 +118,18 @@ __global__ void shift_add_cols(float *rowPatch, float *output, int H, int K)
     }
 }
 
-void shift_add(float *patch, float *output, int H, int W, int M, int K)
+void shift_add(float *vramPatch, float *vramOutput, int H, int W, int M, int K)
 {
     // Device Memory
-    float *vramPatch, *vramRowPatch, *vramOutput;
+    float *vramRowPatch;
 
-    cudaMalloc((void **)&vramPatch, H * W * M * K * K * sizeof(float));
+    // DEBUG CODE
+    float *patch = (float *)malloc(H * W * M * K * K * sizeof(float));
+    cudaMemcpy(patch, vramPatch, H * W * M * K * K * sizeof(float), cudaMemcpyDeviceToHost);
+    print_matrix(patch, H * W, M * K * K);
+    free(patch);
+
     cudaMalloc((void **)&vramRowPatch, M * H * K * (W + K - 1) * sizeof(float));
-    cudaMemcpy(vramPatch, patch, H * W * M * K * K * sizeof(float), cudaMemcpyHostToDevice);
     dim3 dimGridShiftAddRows(H);
     dim3 dimBlockShiftAddRows(M, K, K);
     shift_add_rows<<<dimGridShiftAddRows, dimBlockShiftAddRows>>>(vramPatch, vramRowPatch, W);
@@ -128,14 +141,8 @@ void shift_add(float *patch, float *output, int H, int W, int M, int K)
     print_matrix(rowPatch, M * H, (W + K - 1) * K);
     free(rowPatch);
 
-    cudaMalloc((void **)&vramOutput, M * (H + K - 1) * (W + K - 1) * sizeof(float));
     dim3 dimGridShiftAddCol(M);
     dim3 dimBlockShiftAddCol((W + K - 1));
     shift_add_cols<<<dimGridShiftAddCol, dimBlockShiftAddCol>>>(vramRowPatch, vramOutput, H, K);
     cudaFree(vramRowPatch);
-    cudaMemcpy(output, vramOutput, M * (H + K - 1) * (W + K - 1) * sizeof(float), cudaMemcpyDeviceToHost);
-    cudaFree(vramOutput);
-
-    // DEBUG CODE
-    print_matrix(output, M * (H + K - 1), (W + K - 1));
 }
