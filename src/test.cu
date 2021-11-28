@@ -30,39 +30,41 @@ void init_matrix(float *mat, int rows, int cols, float seed)
 
 int main(void)
 {
-    int rows_input, cols_input, rows_kernel, cols_kernel, rows_output, cols_output;
-
-    //for simplicity we define input and kernel both to be 2*2 matrices
-    rows_input = cols_input = 2;
-    rows_kernel = cols_kernel = 2;
-    rows_output = rows_input + rows_kernel - 1;
-    cols_output = cols_input + cols_kernel - 1;
-
-    // allocate host memory
-    float *host_input = (float *)malloc(rows_input * cols_input * sizeof(float));
-    float *host_kernel = (float *)malloc(rows_kernel * cols_kernel * sizeof(float));
-    float *host_conv_output = (float *)malloc(rows_output * cols_output * sizeof(float));
-
-    // initialize host matrices in row major
-    init_matrix(host_input, rows_input, cols_input, 1.0);
-    init_matrix(host_kernel, rows_kernel, cols_kernel, 5.0);
+    // Arguements for trans_conv
+    int H = 3;
+    int W = 4;
+    int C = 2;
+    int M = 2;
+    int KH = 3;
+    int KW = 2;
+    int SH = 2;
+    int SW = 1;
+    int PH = 2;
+    int PW = 1;
+    int OH = SH * (H - 1) + KH - 2 * PH;
+    int OW = SW * (W - 1) + KW - 2 * PW;
+    float *input = (float *)malloc(H * W * C * sizeof(float));
+    float *kernel = (float *)malloc(C * M * KH * KW * sizeof(float));
+    float *output = (float *)malloc(OH * OW * M * sizeof(float));
+    init_matrix(input, H * W, C, 1.0);
+    init_matrix(kernel, C * M, KH * KW, 1.0);
 
     std::cout << "input =" << std::endl;
-    print_matrix(host_input, rows_input, cols_input);
+    print_matrix(input, H * W, C);
 
     std::cout << "kernel =" << std::endl;
-    print_matrix(host_kernel, rows_kernel, cols_kernel);
+    print_matrix(kernel, C * M, KH * KW);
 
     // try to test to trans_conv
-    trans_conv(host_input, host_kernel, host_conv_output, rows_input, cols_input, 1, 1, rows_kernel);
+    trans_conv(input, kernel, output, H, W, C, M, KH, KW, SH, SW, PH, PW);
 
     std::cout << "conv output =" << std::endl;
-    print_matrix(host_conv_output, rows_output, cols_output);
+    print_matrix(output, OH * OW, M);
 
     // Free CPU memory
-    free(host_input);
-    free(host_kernel);
-    free(host_conv_output);
+    free(input);
+    free(kernel);
+    free(output);
 
     return 0;
 }
