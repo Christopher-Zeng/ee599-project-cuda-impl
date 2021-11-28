@@ -1,5 +1,6 @@
 #include <stdlib.h>
 #include <iostream>
+#include <cublas_v2.h>
 #include "trans-conv.h"
 #include "test.h"
 
@@ -18,7 +19,13 @@ void trans_conv(float *input, float *kernel, float *output, int H, int W, int C,
     cudaMalloc(&vramPatch, H * W * M * K * K * sizeof(float));
 
     // Perform GEMM to get the patch matrix.
-    gemm(input, kernel, vramPatch, H * W, M * K * K, C);
+    gemm(vramInput, vramKernel, vramPatch, H * W, M * K * K, C);
+
+    // DEBUG CODE
+    float *hostInput = (float *)malloc(H * W * C * sizeof(float));
+    cudaMemcpy(hostInput, vramInput, H * W * C * sizeof(float), cudaMemcpyDeviceToHost);
+    print_matrix(hostInput, H, W * C);
+    free(hostInput);
 
     // Memory management
     cudaFree(vramInput);
@@ -43,6 +50,35 @@ void trans_conv(float *input, float *kernel, float *output, int H, int W, int C,
     // Memory transfer
     cudaMemcpy(output, vramOutput, M * H * W * sizeof(float), cudaMemcpyDeviceToHost);
     cudaFree(vramOutput);
+}
+
+void gemm(float *vramOpera, float *vramOperb, float *vramRes, int H, int W, int K)
+{
+    // BLAS GEMM arguements
+    cublasHandle_t handle;
+    cublasCreate(&handle);
+    const float alpha = 1;
+    const float beta = 0;
+
+    /*
+    Notice that althought BLAS routines assume column-major layout for matrices, 
+    the change of layout is equivalent to matrix transpose.
+    With the simple math fact that (B^T * A^T) = (AB)^T, 
+    it is evident that we can call this BLAS routine with row-major layout matrices,
+    and still get the correct row-major layout result,
+    if we just exchange the operands. 
+    */
+    cublasSgemm(
+        handle, CUBLAS_OP_N, CUBLAS_OP_N,
+        W, H, K,
+        &alpha,
+        vramOperb, W,
+        vramOpera, K,
+        &beta,
+        vramRes, W);
+
+    // destory handle
+    cublasDestroy(handle);
 }
 
 /*
