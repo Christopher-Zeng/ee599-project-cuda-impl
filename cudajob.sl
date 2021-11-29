@@ -10,3 +10,9 @@ module load cuda/10.1.243
 
 echo "GPU Implementation"
 ./bin/gpu-impl
+
+module purge
+module load gcc/8.3.0
+module load python/3.9.2
+
+python src/torch-test.py
