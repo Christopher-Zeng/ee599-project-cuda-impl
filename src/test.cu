@@ -1,6 +1,8 @@
 #include <iostream>
 #include <iterator>
 #include <cstdlib>
+#include <stdlib.h>
+#include <stdio.h>
 #include <time.h>
 #include <fstream>
 #include <sstream>
@@ -80,39 +82,31 @@ int main(void)
     }
     
     // Arguements for trans_conv
-    int H = 3;
-    int W = 4;
-    int C = 2;
-    int M = 2;
-    int KH = 3;
-    int KW = 2;
-    int SH = 2;
-    int SW = 1;
-    int PH = 2;
-    int PW = 1;
+    int KH, KW, SH, SW, PH, PW;
+    KH = KW = K;
+    SH = SW = 1;
+    PH = PW = 0;
     int OH = SH * (H - 1) + KH - 2 * PH;
     int OW = SW * (W - 1) + KW - 2 * PW;
-    float *input = (float *)malloc(H * W * C * sizeof(float));
-    float *kernel = (float *)malloc(C * M * KH * KW * sizeof(float));
     float *output = (float *)malloc(OH * OW * M * sizeof(float));
-    init_matrix(input, H * W, C, 1.0);
-    init_matrix(kernel, C * M, KH * KW, 1.0);
 
-    std::cout << "input =" << std::endl;
-    print_matrix(input, H * W, C);
-
-    std::cout << "kernel =" << std::endl;
-    print_matrix(kernel, C * M, KH * KW);
+    struct timespec start, stop; 
+    double time;
+    if( clock_gettime( CLOCK_REALTIME, &start) == -1 ) { perror( "clock gettime" );}
 
     // try to test to trans_conv
-    trans_conv(input, kernel, output, H, W, C, M, KH, KW, SH, SW, PH, PW);
+    trans_conv(host_input, host_kernel, output, H, W, C, M, KH, KW, SH, SW, PH, PW);
+
+    if( clock_gettime( CLOCK_REALTIME, &stop) == -1 ) { perror( "clock gettime" );}	  
+	time = (stop.tv_sec - start.tv_sec)+ (double)(stop.tv_nsec - start.tv_nsec)/1e9;
+	printf("time is %f ns\n", time*1e9);	
 
     std::cout << "conv output =" << std::endl;
     print_matrix(output, OH * OW, M);
 
     // Free CPU memory
-    free(input);
-    free(kernel);
+    free(host_input);
+    free(host_kernel);
     free(output);
 
     return 0;

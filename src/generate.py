@@ -23,6 +23,10 @@ kernel = torch.rand((C, M, K, K))
 output = F.conv_transpose2d(input, kernel, stride=1)
 
 __location__ = os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file__)))
+
+if not os.path.exists(os.path.join(__location__, '../data')):
+    os.makedirs(os.path.join(__location__, '../data'))
+
 with open(os.path.join(__location__, '../data/dim.csv'), 'w', encoding='utf-8') as out:
     writer = csv.writer(out)
     writer.writerow([H, W, C, M, K])
