@@ -38,12 +38,12 @@ void read_data(std::string path, int *dim, float *input, float *kernel, float *g
     if (!myFile.is_open())
         throw std::runtime_error("Could not open file");
 
-    int *dim = (int *)malloc(5 * sizeof(int));
+    dim = (int *)malloc(10 * sizeof(int));
     read_file<int>(myFile, dim);
 
     input = (float *)malloc(dim[0] * dim[1] * dim[2] * sizeof(float));
     read_file<float>(myFile, input);
-    kernel = (float *)malloc(dim[3] * dim[4] * dim[4] * sizeof(float));
+    kernel = (float *)malloc(dim[3] * dim[4] * dim[5] * sizeof(float));
     read_file<float>(myFile, kernel);
     // goldenOutput = (float *)malloc(dim[0] * dim[1] * dim[3] sizeof(float));
     // read_file<float>(myFile, dim);
@@ -72,20 +72,22 @@ int main(void)
     int *dim;
     float *input;
     float *kernel;
-    float *output;
     float *goldenOutput;
+
+    read_data("/data/dim.csv", dim, input, kernel, goldenOutput);
 
     int H = dim[0];
     int W = dim[1];
     int C = dim[2];
     int M = dim[3];
-    int K = dim[4];
+    int KH = dim[4];
+    int KW = dim[5];
+    int SH = dim[6];
+    int SW = dim[7];
+    int PH = dim[8];
+    int PW = dim[9];
 
     // Arguements for trans_conv
-    int KH, KW, SH, SW, PH, PW;
-    KH = KW = K;
-    SH = SW = 1;
-    PH = PW = 0;
     int OH = SH * (H - 1) + KH - 2 * PH;
     int OW = SW * (W - 1) + KW - 2 * PW;
     float *output = (float *)malloc(OH * OW * M * sizeof(float));
@@ -98,7 +100,7 @@ int main(void)
     }
 
     // try to test to trans_conv
-    trans_conv(host_input, host_kernel, output, H, W, C, M, KH, KW, SH, SW, PH, PW);
+    trans_conv(input, kernel, output, H, W, C, M, KH, KW, SH, SW, PH, PW);
 
     if (clock_gettime(CLOCK_REALTIME, &stop) == -1)
     {
@@ -111,8 +113,8 @@ int main(void)
     // print_matrix(output, OH * OW, M);
 
     // Free CPU memory
-    free(host_input);
-    free(host_kernel);
+    free(input);
+    free(kernel);
     free(output);
 
     return 0;
