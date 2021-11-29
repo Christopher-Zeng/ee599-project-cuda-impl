@@ -92,6 +92,12 @@ void trans_conv(
     // Memory recycle
     cudaFree(vramRowPatch);
 
+    // DEBUG CODE
+    float *altOutput = (float *)malloc(outputSize * sizeof(float));
+    cudaMemcpy(altOutput, vramOutput, outputSize * sizeof(float), cudaMemcpyDeviceToHost);
+    print_matrix(altOutput, OH * OW, M);
+    free(altOutput);
+
     // Memory transfer
     cudaMemcpy(output, vramOutput, outputSize * sizeof(float), cudaMemcpyDeviceToHost);
     cudaFree(vramOutput);
@@ -172,7 +178,7 @@ __global__ void shift_add_rows(
 }
 
 __global__ void shift_add_cols(
-    const float *rowPatch, float *vramOutput,
+    const float *vramRowPatch, float *vramOutput,
     int H, const int SH, const int PH)
 {
     // Regain tensor dimensions;
@@ -190,19 +196,19 @@ __global__ void shift_add_cols(
     // Don't remove the parenthesis if you want to understand the code after one minute.
     // output (OH, OW, M) accessed as output[oh, ow, m]
     int outputStride = OW * M;
-    int outputOffset = ((0) * OH + ow) * OW + m;
+    int outputOffset = ((0) * OW + ow) * M + m;
     // rowPatch (H, OW, M, KH) accessed as rowPatch[h, ow, m, kh]
     int rowPatchStride = OW * M * KH;
-    int rowPatchOffset = (((0) * H + ow) * OW + m) * M + kh;
+    int rowPatchOffset = (((0) * OW + ow) * M + m) * KH + kh;
 
     for (h = 0; h < H; ++h)
     {
         oh = SH * h + kh - PH;
         if (oh > -1 && oh < OH)
         {
-            // equivilent to output[m, S*h + k2, w] += rowPatch[m, h, w, k2];
+            // equivilent to output[m, S*h + kh, ow] += rowPatch[m, h, ow, kh];
             vramOutput[oh * outputStride + outputOffset] +=
-                rowPatch[h * rowPatchStride + rowPatchOffset];
+                vramRowPatch[h * rowPatchStride + rowPatchOffset];
         }
     }
 }
