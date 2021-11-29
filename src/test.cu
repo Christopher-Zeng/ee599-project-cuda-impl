@@ -4,10 +4,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <time.h>
-#include <fstream>
-#include <sstream>
 #include <utility>
-#include <stdexcept>
 #include "trans-conv.h"
 #include "test.h"
 
@@ -35,58 +32,54 @@ void init_matrix(float *mat, int rows, int cols, float seed)
     }
 }
 
-int main(void)
+void read_data(std::string path, int *dim, float *input, float *kernel, float *goldenOutput)
 {
-    int *dim = (int *)malloc(5 * sizeof(int));
-
-    std::ifstream myFile("data/dim.csv");
+    std::ifstream myFile(path);
     if (!myFile.is_open())
         throw std::runtime_error("Could not open file");
 
+    int *dim = (int *)malloc(5 * sizeof(int));
+    read_file<int>(myFile, dim);
+
+    input = (float *)malloc(dim[0] * dim[1] * dim[2] * sizeof(float));
+    read_file<float>(myFile, input);
+    kernel = (float *)malloc(dim[3] * dim[4] * dim[4] * sizeof(float));
+    read_file<float>(myFile, kernel);
+    // goldenOutput = (float *)malloc(dim[0] * dim[1] * dim[3] sizeof(float));
+    // read_file<float>(myFile, dim);
+}
+
+template <typename T>
+void read_file(std::ifstream &fs, T *buffer)
+{
     std::string line;
-    int dim_val, index;
+    int val, index;
     index = 0;
-    std::getline(myFile, line);
+    std::getline(fs, line);
     std::stringstream ss(line);
-    while (ss >> dim_val)
+    while (ss >> val)
     {
-        std::cout << dim_val << std::endl;
-        dim[index] = dim_val;
+        std::cout << val << std::endl;
+        buffer[index] = val;
         if (ss.peek() == ',')
             ss.ignore();
         index++;
     }
+}
+
+int main(void)
+{
+    int *dim;
+    float *input;
+    float *kernel;
+    float *output;
+    float *goldenOutput;
 
     int H = dim[0];
     int W = dim[1];
     int C = dim[2];
     int M = dim[3];
     int K = dim[4];
-
-    float *host_input = (float *)malloc(H * W * C * sizeof(float));
-    float host_val;
-    index = 0;
-    std::getline(myFile, line);
-    std::stringstream s1(line);
-    while (s1 >> host_val)
-    {
-        host_input[index] = host_val;
-        if (s1.peek() == ',')
-            s1.ignore();
-        index++;
-    }
-
-    float *host_kernel = (float *)malloc(C * M * K * K * sizeof(float));
-    index = 0;
-    std::getline(myFile, line);
-    std::stringstream s2(line);
-    while (s2 >> host_val)
-    {
-        host_kernel[index] = host_val;
-        if (s2.peek() == ',')
-            s2.ignore();
-        index++;
-    }
 
     // Arguements for trans_conv
     int KH, KW, SH, SW, PH, PW;
@@ -111,11 +104,11 @@ int main(void)
     {
         perror("clock gettime");
     }
-    time = (stop.tv_sec - start.tv_sec) + (double)(stop.tv_nsec - start.tv_nsec) / 1e9;
-    printf("time is %f ns\n", time * 1e9);
+    time = (stop.tv_sec - start.tv_sec) * 1e9 + (double)(stop.tv_nsec - start.tv_nsec);
+    printf("time is %f ms\n", time / 1e3);
 
     std::cout << "conv output =" << std::endl;
-    print_matrix(output, OH * OW, M);
+    // print_matrix(output, OH * OW, M);
 
     // Free CPU memory
     free(host_input);
