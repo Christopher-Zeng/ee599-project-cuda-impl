@@ -47,5 +47,5 @@ __global__ void shift_add_rows(
     Alway called with (OW, M) grid, (KH) block.
 */
 __global__ void shift_add_cols(
-    const float *rowPatch, float *vramOutput,
+    const float *vramRowPatch, float *vramOutput,
     int H, const int SH, const int PH);

@@ -5,6 +5,7 @@
 #SBATCH --output=out/cudajob.out
 #SBATCH --error=out/cudajob.err
 #SBATCH --gres=gpu
+#SBATCH --constraint=epyc-7282
 
 module purge
 module load gcc/8.3.0
