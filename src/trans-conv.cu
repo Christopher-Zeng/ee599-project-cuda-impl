@@ -6,67 +6,94 @@
 
 void trans_conv(
     float *input, float *kernel, float *output,
-    const int H, const int W, const int C, const int M, const int K)
+    const int H, const int W, const int C,
+    const int M, const int KH, const int KW,
+    const int SH, const int SW,
+    const int PH, const int PW)
 {
+    // Output size
+    int OH = SH * (H - 1) + KH - 2 * PH;
+    int OW = SW * (W - 1) + KW - 2 * PW;
+
     // Memory transfer
+    /*
+    vramInput: 
+    the input tensor to be feed into GEMM.
+    Should be vramInput[H][W][C] serialized array.
+    vramKernel: 
+    the kernel tensor to be feed into GEMM.
+    Should be vramKernel[C][M][KH][KW] serialized array
+    */
     float *vramInput, *vramKernel;
-    cudaMalloc(&vramInput, H * W * C * sizeof(float));
-    cudaMalloc(&vramKernel, C * M * K * K * sizeof(float));
-    cudaMemcpy(vramInput, input, H * W * C * sizeof(float), cudaMemcpyHostToDevice);
-    cudaMemcpy(vramKernel, kernel, C * M * K * K * sizeof(float), cudaMemcpyHostToDevice);
+    int inputSize = H * W * C;
+    int kernelSize = C * M * KH * KW;
+    cudaMalloc(&vramInput, inputSize * sizeof(float));
+    cudaMalloc(&vramKernel, kernelSize * sizeof(float));
+    cudaMemcpy(vramInput, input, inputSize * sizeof(float), cudaMemcpyHostToDevice);
+    cudaMemcpy(vramKernel, kernel, kernelSize * sizeof(float), cudaMemcpyHostToDevice);
 
     /*
-    vramPatch: the patch tensor to be merged back together. 
-    Should be vramPatch[H][W][M][K][K] serialized array.
+    vramPatch: 
+    the patch tensor to be merged back together. 
+    Should be vramPatch[H][W][M][KH][KW] serialized array.
     */
     float *vramPatch;
-    cudaMalloc(&vramPatch, H * W * M * K * K * sizeof(float));
+    int patchSize = H * W * M * KH * KW;
+    cudaMalloc(&vramPatch, patchSize * sizeof(float));
+    cudaMemset(vramPatch, 0, patchSize);
     // Perform GEMM to get the patch matrix.
-    gemm(vramInput, vramKernel, vramPatch, H * W, M * K * K, C);
+    gemm(vramInput, vramKernel, vramPatch, H * W, M * KH * KW, C);
     // Memory recycle
     cudaFree(vramInput);
     cudaFree(vramKernel);
 
     // DEBUG CODE
-    float *patch = (float *)malloc(H * W * M * K * K * sizeof(float));
-    cudaMemcpy(patch, vramPatch, H * W * M * K * K * sizeof(float), cudaMemcpyDeviceToHost);
-    print_matrix(patch, H * W, M * K * K);
+    float *patch = (float *)malloc(patchSize * sizeof(float));
+    cudaMemcpy(patch, vramPatch, patchSize * sizeof(float), cudaMemcpyDeviceToHost);
+    print_matrix(patch, H * W * M, KH * KW);
     free(patch);
 
     /*
-    vramRowPatch: The patch tensor of rows.
-    M * H patch rows, each of (W+K-1) * K size.
+    vramRowPatch: 
+    the patch tensor that have already gone through the W dimension shift add,
+    and to be feed into H dimension shift add.
+    H patch rows, each of OW * M * KH size.
     */
     float *vramRowPatch;
-    cudaMalloc((void **)&vramRowPatch, M * H * K * (W + K - 1) * sizeof(float));
+    int rowPatchSize = H * OW * M * KH;
+    cudaMalloc((void **)&vramRowPatch, rowPatchSize * sizeof(float));
+    cudaMemset(vramRowPatch, 0, rowPatchSize);
     // Perform shift add over the row-axis of the patches.
-    dim3 dimGridShiftAddRows(H);
-    dim3 dimBlockShiftAddRows(M, K, K);
-    shift_add_rows<<<dimGridShiftAddRows, dimBlockShiftAddRows>>>(vramPatch, vramRowPatch, W);
+    dim3 dimGridShiftAddRows(H, M);
+    dim3 dimBlockShiftAddRows(KH, KW);
+    shift_add_rows<<<dimGridShiftAddRows, dimBlockShiftAddRows>>>(vramPatch, vramRowPatch, W, SW, PW);
     // Memory recycle
     cudaFree(vramPatch);
 
     // DEBUG CODE
-    float *rowPatch = (float *)malloc(M * H * (W + K - 1) * K * sizeof(float));
-    cudaMemcpy(rowPatch, vramRowPatch, M * H * (W + K - 1) * K * sizeof(float), cudaMemcpyDeviceToHost);
-    print_matrix(rowPatch, M * H, (W + K - 1) * K);
+    float *rowPatch = (float *)malloc(rowPatchSize * sizeof(float));
+    cudaMemcpy(rowPatch, vramRowPatch, rowPatchSize * sizeof(float), cudaMemcpyDeviceToHost);
+    print_matrix(rowPatch, H * OW, M * KH);
     free(rowPatch);
 
     /*
-    vramOutput: the output tensor. 
-    Should be output[M][H+K-1][W+K-1] serialized array.
+    vramOutput: 
+    the output tensor. 
+    Should be output[OH][OW][M] serialized array.
     */
-    float *vramOutput = NULL;
-    cudaMalloc(&vramOutput, M * (H + K - 1) * (W + K - 1) * sizeof(float));
+    float *vramOutput;
+    int outputSize = OH * OW * M;
+    cudaMalloc(&vramOutput, outputSize * sizeof(float));
+    cudaMemset(vramOutput, 0, outputSize);
     // Perform shift_add over the columns of the patch rows.
-    dim3 dimGridShiftAddCol(M);
-    dim3 dimBlockShiftAddCol((W + K - 1));
-    shift_add_cols<<<dimGridShiftAddCol, dimBlockShiftAddCol>>>(vramRowPatch, vramOutput, H, K);
+    dim3 dimGridShiftAddCol(OW, M);
+    dim3 dimBlockShiftAddCol(KH);
+    shift_add_cols<<<dimGridShiftAddCol, dimBlockShiftAddCol>>>(vramRowPatch, vramOutput, H, SH, PH);
     // Memory recycle
     cudaFree(vramRowPatch);
 
     // Memory transfer
-    cudaMemcpy(output, vramOutput, M * (H + K - 1) * (W + K - 1) * sizeof(float), cudaMemcpyDeviceToHost);
+    cudaMemcpy(output, vramOutput, outputSize * sizeof(float), cudaMemcpyDeviceToHost);
     cudaFree(vramOutput);
 }
 
@@ -101,42 +128,31 @@ void gemm(
     cublasDestroy(handle);
 }
 
-/*
-    For H * W patches, each of M * K * K size, 
-    this function perform shift_add over the rows of the patches.
-    The result should be M * H patch rows, each of (W+K-1) * K size. 
-    Alway called with (H) grid, (M, K, K) block.
-*/
 __global__ void shift_add_rows(
-    const float *vramPatch, float *vramRowPatch, int W)
+    const float *vramPatch, float *vramRowPatch,
+    int W, const int SW, const int PW)
 {
+    // Regain tensor dimensions;
+    int H = gridDim.x;
+    int M = gridDim.y;
+    int KH = blockDim.x;
+    int KW = blockDim.y;
+    int OW = SW * (W - 1) + KW - 2 * PW;
     // Regain tensor indexes;
     int h = blockIdx.x;
-    int m = threadIdx.x;
-    int k2 = threadIdx.y;
-    int k1 = threadIdx.z;
-    int w;
-
-    int H = gridDim.x;
-    int M = blockDim.x;
-    int K = blockDim.y;
+    int m = blockIdx.y;
+    int kh = threadIdx.x;
+    int kw = threadIdx.y;
+    // The index to be iterated over.
+    int w, ow;
 
     // Don't remove the parenthesis if you want to understand the code after one minute.
-    // rowPatch (M, H, (W+K-1), K) accessed as rowPatch[m, h, w + k1, k2]
-    int rowPatchStride = K;
-    int rowPatchOffset = k2 + k1 * (K) + h * ((W + K - 1) * K) + m * (H * (W + K - 1) * K);
-    // patch (H, W, M, K, K) accessed as patch[h, w, m, k2, k1]
-    int patchStride = M * K * K;
-    int patchOffset = k1 + k2 * (K) + m * (K * K) + h * (W * M * K * K);
-
-    if (k1 == 0)
-    {
-        for (w = 0; w < W + K - 1; ++w)
-        {
-            vramRowPatch[w * rowPatchStride + rowPatchOffset] = 0;
-        }
-    }
-    __syncthreads();
+    // rowPatch (H, OW, M, KH) accessed as rowPatch[h, ow, m, kh]
+    int rowPatchStride = M * KH;
+    int rowPatchOffset = (((h)*OW + 0) * M + m) * KH + kh;
+    // patch (H, W, M, KH, KW) accessed as patch[h, w, m, kh, kw]
+    int patchStride = M * KH * KW;
+    int patchOffset = ((((h)*OW + 0) * M + m) * KH + kh) * KW + kw;
 
     /*
     Notice that the memory access pattern on rowPatch is not efficient yet. 
@@ -144,50 +160,49 @@ __global__ void shift_add_rows(
     */
     for (w = 0; w < W; ++w)
     {
-        // equivilent to rowPatch[m, h, w + k1, k2] += patch[h, w, m, k2, k1];
-        vramRowPatch[w * rowPatchStride + rowPatchOffset] +=
-            vramPatch[w * patchStride + patchOffset];
+        ow = SW * w + kw - PW;
+        // equivilent to rowPatch[h, SW*w + kw - PW, m, kh] += patch[h, w, m, kh, kw];
+        if (ow > -1 && ow < OW)
+        {
+            vramRowPatch[ow * rowPatchStride + rowPatchOffset] +=
+                vramPatch[w * patchStride + patchOffset];
+        }
         __syncthreads();
     }
 }
 
-/*
-    For M * H patch rows, each of K * (W+K-1) size, 
-    this function perform shift_add over the columns of the patch rows.
-    The result should be M * (H+K-1) * (W+K-1) size.
-    Alway called with (M) grid, (W + K - 1) block.
-*/
 __global__ void shift_add_cols(
     const float *rowPatch, float *vramOutput,
-    const int H, const int K)
+    int H, const int SH, const int PH)
 {
-    // Regain tensor indexes.
-    int m = blockIdx.x;
-    int w = threadIdx.x;
-    int h, k2;
-
-    int Wp = blockDim.x;
+    // Regain tensor dimensions;
+    int OW = gridDim.x;
+    int M = gridDim.y;
+    int KH = blockDim.x;
+    int OH = SH * (H - 1) + KH - 2 * PH;
+    // Regain tensor indexes;
+    int ow = blockIdx.x;
+    int m = blockIdx.y;
+    int kh = threadIdx.x;
+    // The index to be iterated over.
+    int h, oh;
 
     // Don't remove the parenthesis if you want to understand the code after one minute.
-    // output (M, (H+K-1), (W+K-1)) accessed as output[m, h + k2, w]
-    int outputStride = Wp;
-    int outputOffset = w + m * ((H + K - 1) * Wp);
-    // rowPatch (M, H, (W+K-1), K) accessed as rowPatch[m, h, w, k2]
-    int rowPatchStride = K * Wp;
-    int rowPatchOffset = w * (K) + m * ((H + K - 1) * Wp * K);
-
-    for (h = 0; h < (H + K - 1); ++h)
-    {
-        vramOutput[h * outputStride + outputOffset] = 0;
-    }
+    // output (OH, OW, M) accessed as output[oh, ow, m]
+    int outputStride = OW * M;
+    int outputOffset = ((0) * OH + ow) * OW + m;
+    // rowPatch (H, OW, M, KH) accessed as rowPatch[h, ow, m, kh]
+    int rowPatchStride = OW * M * KH;
+    int rowPatchOffset = (((0) * H + ow) * OW + m) * M + kh;
 
     for (h = 0; h < H; ++h)
     {
-        for (k2 = 0; k2 < K; ++k2)
+        oh = SH * h + kh - PH;
+        if (oh > -1 && oh < OH)
         {
-            // equivilent to output[m, h + k2, w] += rowPatch[m, h, w, k2];
-            vramOutput[(h + k2) * outputStride + outputOffset] +=
-                rowPatch[k2 + h * rowPatchStride + rowPatchOffset];
+            // equivilent to output[m, S*h + k2, w] += rowPatch[m, h, w, k2];
+            vramOutput[oh * outputStride + outputOffset] +=
+                rowPatch[h * rowPatchStride + rowPatchOffset];
         }
     }
 }

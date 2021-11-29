@@ -2,7 +2,9 @@
     Perform transposed convolution with M sets of C-channel KH-by-KW kernels,
     on an input of C-channel H-by-W images, 
     by strides of SH over the H dimension and SW over the W dimension,
-    and paddings of PH over the H dimension, and PW over the W dimension,
+    and paddings of PH over the H dimension, and PW over the W dimension.
+    Due to the definition of transposed convolution, 
+    SH, PH <= KH, SW, PW <= 
     The result should be M sets of OH-by-OW images, 
     with OH = SH * (H-1) + KH - 2PH,
     and OW = SW * (W-1) + KW - 2PW.
@@ -24,7 +26,7 @@ void trans_conv(
 */
 void gemm(
     const float *vramOpera, const float *vramOperb, float *vramRes,
-    const int H, const int W, const int K);
+    const int H, const int W, const int KW);
 /*
     For H * W patches, each of M * KH * KW size, 
     this function perform shift add over the W dimension of the patches,
@@ -35,7 +37,7 @@ void gemm(
 */
 __global__ void shift_add_rows(
     const float *vramPatch, float *vramRowPatch,
-    const int W, const int SW, const int PW);
+    int W, const int SW, const int PW);
 /*
     For H patch rows, each of OW * M * KH size,, 
     this function perform shift add over H dimension of the patch rows,
@@ -46,4 +48,4 @@ __global__ void shift_add_rows(
 */
 __global__ void shift_add_cols(
     const float *rowPatch, float *vramOutput,
-    const int H, const int SH, const int PH);
+    int H, const int SH, const int PH);
