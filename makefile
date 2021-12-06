@@ -1,7 +1,8 @@
 # tool macros
 CC := nvcc
 
-CCFLAGS :=
+CCFLAGS := -O2 --gpu-architecture=sm_80
+CCDBGFLAGS := -DDEBUG -G -g 
 LDFLAGS := -lcublas
 OBJFLAGS := -c
 
@@ -50,7 +51,7 @@ $(OBJ_PATH)/%.o: $(SRC_PATH)/%.c*
 	$(CC) $< $(CCFLAGS) $(OBJFLAGS) -o $@
 
 $(TARGET_DEBUG): $(OBJ_DEBUG)
-	$(CC) $(CCDBGFLAGS) $(LDFLAGS) -o $@
+	$(CC) $(CCDBGFLAGS) $(LDFLAGS) -o $@ $(OBJ_DEBUG)
 
 $(DBG_PATH)/%.o: $(SRC_PATH)/%.c*
 	$(CC) $< $(CCDBGFLAGS) $(OBJFLAGS) -o $@

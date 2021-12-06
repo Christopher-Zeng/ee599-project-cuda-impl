@@ -4,7 +4,8 @@
             "name": "Linux",
             "includePath": [
                 "${workspaceFolder}/**",
-                "/usr/local/cuda-11.4/include"
+                "/usr/local/cuda-11.4/include",
+                "${workspaceFolder}/inc"
             ],
             "defines": [],
             "compilerPath": "/usr/local/cuda-11.4/bin/nvcc",

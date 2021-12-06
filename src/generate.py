@@ -12,7 +12,7 @@ data_type = torch.float32
 
 torch.manual_seed(seed)
 torch.set_default_dtype(data_type)
-torch.use_deterministic_algorithms(True)
+# torch.use_deterministic_algorithms(True)
 
 params = {
     "N": 64,
@@ -38,7 +38,7 @@ if not os.path.exists(data_dir):
 kernel = torch.rand((params["C"], params["M"], params["KH"], params["KW"]))
 pd.DataFrame(
     kernel.numpy().reshape((params["C"] * params["M"], params["KH"] * params["KW"]))
-).to_csv(os.path.join(data_dir, "kernel.csv"), header=None, index=None)
+).to_csv(os.path.join(data_dir, "kernel.csv"), index=None)
 
 execution_time = []
 
@@ -50,7 +50,7 @@ for n in range(params["N"]):
         input.permute((0, 2, 3, 1))
         .numpy()
         .reshape((params["H"] * params["W"], params["C"])),
-    ).to_csv(os.path.join(data_dir, "input_{}.csv".format(n)), header=None, index=None)
+    ).to_csv(os.path.join(data_dir, "input_{}.csv".format(n)), index=None)
 
     start = datetime.datetime.now()
     with torch.cuda.device(0):
@@ -64,11 +64,12 @@ for n in range(params["N"]):
         )
         output = output_cuda.cpu()
     end = datetime.datetime.now()
+
     pd.DataFrame(
         output.permute(0, 2, 3, 1)
         .numpy()
         .reshape((params["OH"] * params["OW"], params["M"]))
-    ).to_csv(os.path.join(data_dir, "output_{}.csv".format(n)), header=None, index=None)
+    ).to_csv(os.path.join(data_dir, "output_{}.csv".format(n)), index=None)
     execution_time.append(start - end)
 
 avg_execution_time = sum([time.microseconds for time in execution_time]) / len(
@@ -77,4 +78,4 @@ avg_execution_time = sum([time.microseconds for time in execution_time]) / len(
 print("Pytorch: Average time per sample: {}ms".format(avg_execution_time))
 
 # 1504MiB
-# Pytorch: Average time per sample: 931550.921875ms
+# Pytorch: Average time per sample: 930492.671875ms

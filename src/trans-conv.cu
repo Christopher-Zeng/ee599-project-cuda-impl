@@ -2,7 +2,6 @@
 #include <iostream>
 #include <cublas_v2.h>
 #include "trans-conv.h"
-#include "test.h"
 
 void trans_conv(
     float *input, float *kernel, float *output,
@@ -47,13 +46,24 @@ void trans_conv(
     cudaFree(vramInput);
     cudaFree(vramKernel);
 
-    /*
-    // DEBUG CODE
+#if DEBUG
+    int nanCount = 0;
+    int zeroCount = 0;
+
     float *patch = (float *)malloc(patchSize * sizeof(float));
     cudaMemcpy(patch, vramPatch, patchSize * sizeof(float), cudaMemcpyDeviceToHost);
-    print_matrix(patch, H * W * M, KH * KW);
+    nanCount = 0;
+    zeroCount = 0;
+    for (int pos = 0; pos < patchSize; ++pos)
+    {
+        nanCount += std::isnan(patch[pos]);
+        zeroCount += (patch[pos] == 0);
+    }
+    std::cout << "patchSize: " + std::to_string(patchSize) + ". ";
+    std::cout << "nanCount: " + std::to_string(nanCount) + ". ";
+    std::cout << "zeroCount: " + std::to_string(zeroCount) + ". " << std::endl;
     free(patch);
-    */
+#endif
 
     /*
     vramRowPatch: 
@@ -72,13 +82,21 @@ void trans_conv(
     // Memory recycle
     cudaFree(vramPatch);
 
-    /*
-    // DEBUG CODE
+#if DEBUG
     float *rowPatch = (float *)malloc(rowPatchSize * sizeof(float));
     cudaMemcpy(rowPatch, vramRowPatch, rowPatchSize * sizeof(float), cudaMemcpyDeviceToHost);
-    print_matrix(rowPatch, H * OW, M * KH);
+    nanCount = 0;
+    zeroCount = 0;
+    for (int pos = 0; pos < rowPatchSize; ++pos)
+    {
+        nanCount += std::isnan(rowPatch[pos]);
+        zeroCount += (rowPatch[pos] == 0);
+    }
+    std::cout << "rowPatchSize: " + std::to_string(rowPatchSize) + ". ";
+    std::cout << "nanCount: " + std::to_string(nanCount) + ". ";
+    std::cout << "zeroCount: " + std::to_string(zeroCount) + ". " << std::endl;
     free(rowPatch);
-    */
+#endif
 
     /*
     vramOutput: 
@@ -96,13 +114,21 @@ void trans_conv(
     // Memory recycle
     cudaFree(vramRowPatch);
 
-    /*
-    // DEBUG CODE
+#if DEBUG
     float *altOutput = (float *)malloc(outputSize * sizeof(float));
     cudaMemcpy(altOutput, vramOutput, outputSize * sizeof(float), cudaMemcpyDeviceToHost);
-    print_matrix(altOutput, OH * OW, M);
+    nanCount = 0;
+    zeroCount = 0;
+    for (int pos = 0; pos < outputSize; ++pos)
+    {
+        nanCount += std::isnan(altOutput[pos]);
+        zeroCount += (altOutput[pos] == 0);
+    }
+    std::cout << "outputSize: " + std::to_string(outputSize) + ". ";
+    std::cout << "nanCount: " + std::to_string(nanCount) + ". ";
+    std::cout << "zeroCount: " + std::to_string(zeroCount) + ". " << std::endl;
     free(altOutput);
-    */
+#endif
 
     // Memory transfer
     cudaMemcpy(output, vramOutput, outputSize * sizeof(float), cudaMemcpyDeviceToHost);
@@ -164,7 +190,7 @@ __global__ void shift_add_rows(
     int rowPatchOffset = (((h)*OW + 0) * M + m) * KH + kh;
     // patch (H, W, M, KH, KW) accessed as patch[h, w, m, kh, kw]
     int patchStride = M * KH * KW;
-    int patchOffset = ((((h)*OW + 0) * M + m) * KH + kh) * KW + kw;
+    int patchOffset = ((((h)*W + 0) * M + m) * KH + kh) * KW + kw;
 
     /*
     Notice that the memory access pattern on rowPatch is not efficient yet. 

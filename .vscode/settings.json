@@ -80,7 +80,10 @@
         "locale": "cpp",
         "numbers": "cpp",
         "semaphore": "cpp",
-        "stop_token": "cpp"
+        "stop_token": "cpp",
+        "__tree": "cpp",
+        "set": "cpp",
+        "unordered_set": "cpp"
     },
     "python.formatting.provider": "black"
 }
