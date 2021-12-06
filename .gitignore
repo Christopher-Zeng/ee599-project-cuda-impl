@@ -4,3 +4,5 @@ obj/
 bin/
 # Ignore execution output files
 out/
+# Ignore data files
+data/

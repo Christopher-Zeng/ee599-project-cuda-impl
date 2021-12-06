@@ -20,7 +20,7 @@ SRC_PATH := src
 DBG_PATH := debug
 
 # compile macros
-TARGET_NAME := gpu-impl
+TARGET_NAME := cuda-impl
 ifeq ($(OS),Windows_NT)
 	TARGET_NAME := $(addsuffix .exe,$(TARGET_NAME))
 endif

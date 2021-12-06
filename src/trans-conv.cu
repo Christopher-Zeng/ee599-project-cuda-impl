@@ -47,11 +47,13 @@ void trans_conv(
     cudaFree(vramInput);
     cudaFree(vramKernel);
 
+    /*
     // DEBUG CODE
     float *patch = (float *)malloc(patchSize * sizeof(float));
     cudaMemcpy(patch, vramPatch, patchSize * sizeof(float), cudaMemcpyDeviceToHost);
     print_matrix(patch, H * W * M, KH * KW);
     free(patch);
+    */
 
     /*
     vramRowPatch: 
@@ -70,11 +72,13 @@ void trans_conv(
     // Memory recycle
     cudaFree(vramPatch);
 
+    /*
     // DEBUG CODE
     float *rowPatch = (float *)malloc(rowPatchSize * sizeof(float));
     cudaMemcpy(rowPatch, vramRowPatch, rowPatchSize * sizeof(float), cudaMemcpyDeviceToHost);
     print_matrix(rowPatch, H * OW, M * KH);
     free(rowPatch);
+    */
 
     /*
     vramOutput: 
@@ -92,11 +96,13 @@ void trans_conv(
     // Memory recycle
     cudaFree(vramRowPatch);
 
+    /*
     // DEBUG CODE
     float *altOutput = (float *)malloc(outputSize * sizeof(float));
     cudaMemcpy(altOutput, vramOutput, outputSize * sizeof(float), cudaMemcpyDeviceToHost);
     print_matrix(altOutput, OH * OW, M);
     free(altOutput);
+    */
 
     // Memory transfer
     cudaMemcpy(output, vramOutput, outputSize * sizeof(float), cudaMemcpyDeviceToHost);
@@ -210,5 +216,6 @@ __global__ void shift_add_cols(
             vramOutput[oh * outputStride + outputOffset] +=
                 vramRowPatch[h * rowPatchStride + rowPatchOffset];
         }
+        __syncthreads();
     }
 }

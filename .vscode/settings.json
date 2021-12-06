@@ -81,5 +81,6 @@
         "numbers": "cpp",
         "semaphore": "cpp",
         "stop_token": "cpp"
-    }
+    },
+    "python.formatting.provider": "black"
 }
