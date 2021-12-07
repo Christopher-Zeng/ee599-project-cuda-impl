@@ -1,7 +1,7 @@
 # tool macros
 CC := nvcc
 
-CCFLAGS := -O2 --gpu-architecture=sm_80
+CCFLAGS := -O2
 CCDBGFLAGS := -DDEBUG -G -g 
 LDFLAGS := -lcublas
 OBJFLAGS := -c
