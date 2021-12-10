@@ -2,13 +2,13 @@
 
 ## Environment Requirments
 ### Running Platform
-Computing cluster with Slurm enabled. This project requires CUDA GPU support. Ideally, the GPU model should be Volta or higher (Volta/Turing/A100).
+Computing cluster with Slurm enabled. This project requires CUDA GPU support. Ideally, the GPU architecture should be Volta or higher (Volta/Turing/Ampere).
 
 ### Modules
 - Python 3.6 or higher
 - PyTorch LTS (1.8.2)
 - CUDA 10.2 or higher
-- gcc 8.3
+- gcc 8.3 or higher
 
 ## Project Structures
 ### ./src

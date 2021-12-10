@@ -1,8 +1,9 @@
-# Ignore object files
-obj/
 # Ignore binary files
 bin/
+debug/
+obj/
 # Ignore execution output files
 out/
 # Ignore data files
 data/
+

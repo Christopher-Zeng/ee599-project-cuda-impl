@@ -11,6 +11,8 @@ module load gcc/8.3.0
 module load cuda/10.2.89
 module load python/3.9.2
 
+pip install --user torch==1.8.2+cu102 torchvision==0.9.2+cu102 torchaudio==0.8.2 -f https://download.pytorch.org/whl/lts/1.8/torch_lts.html
+
 make clean
 make
 echo "Pytorch generation"

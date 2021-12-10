@@ -52,15 +52,15 @@ int main(void)
 {
     const int N = 64;
     const int H = 32;
-    const int W = 32;
+    const int W = 64;
     const int C = 256;
-    const int M = 256;
+    const int M = C;
     const int KH = 7;
-    const int KW = 7;
-    const int SH = 3;
-    const int SW = 3;
-    const int PH = 3;
-    const int PW = 3;
+    const int KW = KH;
+    const int SH = 7;
+    const int SW = SH;
+    const int PH = SH;
+    const int PW = PH;
     const int OH = SH * (H - 1) + KH - 2 * PH;
     const int OW = SW * (W - 1) + KW - 2 * PW;
 
@@ -86,6 +86,7 @@ int main(void)
 
         clock_gettime(CLOCK_REALTIME, &start);
         trans_conv(input, kernel, output, H, W, C, M, KH, KW, SH, SW, PH, PW);
+        cudaDeviceSynchronize();
         clock_gettime(CLOCK_REALTIME, &stop);
 
         execution_times[n] = (double)(stop.tv_sec - start.tv_sec) * 1e6 + (double)(stop.tv_nsec - start.tv_nsec) / 1e3;
@@ -122,6 +123,10 @@ int main(void)
     free(input);
     free(kernel);
     free(output);
+    free(golden);
+    free(execution_times);
+    free(mean_square_errors);
+    free(mean_absolute_percentage_errors);
 
     return 0;
 }

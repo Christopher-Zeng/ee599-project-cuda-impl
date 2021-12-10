@@ -1,6 +1,7 @@
 import os
 from numpy.core.fromnumeric import reshape
 import torch
+from torch._C import ParameterDict
 import torch.nn.functional as F
 import pandas as pd
 import numpy as np
@@ -14,21 +15,20 @@ torch.manual_seed(seed)
 torch.set_default_dtype(data_type)
 # torch.use_deterministic_algorithms(True)
 
-params = {
-    "N": 64,
-    "H": 32,
-    "W": 32,
-    "C": 256,
-    "M": 256,
-    "KH": 7,
-    "KW": 7,
-    "SH": 3,
-    "SW": 3,
-    "PH": 3,
-    "PW": 3,
-    "OH": 94,
-    "OW": 94,
-}
+params = {}
+params["N"] = 64
+params["H"] = 32
+params["W"] = 64
+params["C"] = 256
+params["M"] = params["C"]
+params["KH"] = 7
+params["KW"] = params["KH"]
+params["SH"] = 7
+params["SW"] = params["SH"]
+params["PH"] = params["SH"]
+params["PW"] = params["PH"]
+params["OH"] = params["SH"] * (params["H"] - 1) + params["KH"] - 2 * params["PH"]
+params["OW"] = params["SW"] * (params["W"] - 1) + params["KW"] - 2 * params["PW"]
 
 data_dir = "./data"
 if not os.path.exists(data_dir):
