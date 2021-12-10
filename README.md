@@ -1,6 +1,6 @@
 # ee599-project-cuda-impl
 
-## Environment Requirment
+## Environment Requirments
 ### Running Platform
 Computing cluster with Slurm enabled. This project requires CUDA GPU support. Ideally, the GPU model should be Volta or higher (Volta/Turing/A100).
 
@@ -10,7 +10,7 @@ Computing cluster with Slurm enabled. This project requires CUDA GPU support. Id
 - CUDA 10.2 or higher
 - gcc 8.3
 
-## Project Structure
+## Project Structures
 ### ./src
 ./src contains the core deconvolution module of this project. It also has a PyTorch testing data generation script.
 ### ./inc
